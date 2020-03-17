@@ -9,32 +9,30 @@ class vector
 	friend std::ostream& operator<<(std::ostream& os, const vector& out_vector);
 	friend std::istream& operator>>(std::istream& is, vector& vector_in);
 private:
-	double x_comp{0};
-	double y_comp{0};
-	double z_comp{0};
+	double* vector_array{ nullptr };
+	size_t vector_length{};
 protected:
 public:
 	//default and parameterised constructors and destructors
 	vector() = default;
-	vector(double x_component, double y_component, double z_component) 
-	{
-		x_comp = x_component; y_comp = y_component; z_comp = z_component;
+	vector(size_t length) {
+		vector_length = length;
+		vector_array = new double[vector_length];
+		for (int i{}; i < vector_length; i++) {
+			vector_array[i] = 0;
+		}
 	}
 	~vector() {std::cout << "destructor called" << std::endl;};//do i need to delete anything?
+	double& operator[](size_t i) const;
 	//move and copy constructors and assingment operators
 	vector(vector&);
 	vector(vector&&) noexcept;
 	vector& operator=(vector&);
 	vector& operator=(vector&&) noexcept;
 	//accessors returning components of a vector and its length
-	size_t get_x_comp()const { return x_comp; }
-	size_t get_y_comp()const { return y_comp; }
-	size_t get_z_comp()const { return z_comp; }
-	double vector_length() const{
-		double length{};
-		return length = sqrt(pow(x_comp,2) + pow(y_comp,2) + pow(z_comp,2));
-	}
-
+	double length() const { return vector_length; }
+	//dot product
+	double dot_product(vector& dottie_boi);
 };
 /*--------------------------
 member functions of vector
@@ -42,62 +40,73 @@ member functions of vector
 //overload friend operators for output and input stream
 std::ostream& operator<<(std::ostream& os, const vector &out_vector)
 {
-	if (out_vector.y_comp > 0){
-		if (out_vector.z_comp > 0) {
-			os << out_vector.x_comp << "x + " << out_vector.y_comp << "y + " << out_vector.z_comp << "z\n";
-		}
-		else {
-			os << out_vector.x_comp << "x + " << out_vector.y_comp << "y " << out_vector.z_comp << "z\n";
-		}
-	}
-	else if (out_vector.y_comp < 0) {
-		if (out_vector.z_comp > 0) {
-			os << out_vector.x_comp << "x " << out_vector.y_comp << "y + " << out_vector.z_comp << "z\n";
-		}
-		else {
-			os << out_vector.x_comp << "x " << out_vector.y_comp << "y " << out_vector.z_comp << "z\n";
-		}
+	for (int i{}; i < out_vector.vector_length; i++) {
+		os << out_vector.vector_array[i];
 	}
 	return os;
 }
 std::istream& operator>>(std::istream& is, vector& vector_in) {
 	std::cout << "please enter your cartesian vector as x comp y_comp zcomp seperated by a space: " << std::endl;
-	is >> vector_in.x_comp >> vector_in.y_comp >> vector_in.z_comp;
+	for (int i{}; i < vector_in.vector_length; i++) {
+		is >> vector_in.vector_array[i];
+	}
 	return is;
 }
 //copy and move constructors and operators
-vector::vector(vector& copy_vector) 
+vector::vector(vector& copy_vector)
 {
 	std::cout << "copy constructor called" << std::endl;
-	x_comp = copy_vector.x_comp;
-	y_comp = copy_vector.y_comp;
-	z_comp = copy_vector.z_comp;
+	for (size_t i{}; i < copy_vector.vector_length; i++) {
+		vector_array[i] = copy_vector.vector_array[i];
+	}
 }
 vector::vector(vector&& move_vector) noexcept
 {
 	std::cout << "move constructor called" << std::endl;
-	x_comp = move_vector.x_comp;
-	y_comp = move_vector.y_comp;
-	z_comp = move_vector.z_comp;
-	move_vector.x_comp = 0; move_vector.y_comp = 0; move_vector.z_comp = 0;
+	for (size_t i{}; i < move_vector.vector_length; i++) {
+		vector_array[i] = move_vector.vector_array[i];
+	}
+	for (int i{}; i < move_vector.vector_length; i++) {
+		move_vector.vector_array[i] = 0;
+	}
 }
 vector& vector::operator=(vector& copyvector)
 {
 	std::cout << "copy assignment operator called \n";
 	if (&copyvector == this) return *this;
-	x_comp = 0; y_comp = 0; z_comp = 0;
-	x_comp = copyvector.x_comp; y_comp = copyvector.y_comp; z_comp = copyvector.z_comp;
+	for (size_t i{}; i < copyvector.vector_length; i++) {
+		vector_array[i] = 0;
+	}
+	for (size_t i{}; i < copyvector.vector_length; i++) {
+		vector_array[i] = copyvector.vector_array[i];
+	}
 	return *this;
 }
 vector& vector::operator=(vector&& movevector) noexcept
 {
 	std::cout << "move aasingment operator called" << std::endl;
-	std::swap(x_comp, movevector.x_comp);
-	std::swap(y_comp, movevector.y_comp);
-	std::swap(z_comp, movevector.z_comp);
+	for (size_t i{}; i < movevector.vector_length; i++) {
+		std::swap(vector_array[i], movevector.vector_array[i]);
+	}
 	return *this;
 }
-
+//overloaded element [] operator implementation
+double& vector::operator[](size_t i) const
+{
+	if (i < 0 || i >= vector_length) {
+		std::cout << "Error: trying to access array element out of bounds" << std::endl;
+		throw("Out of Bounds Error");
+	}
+	return vector_array[i];
+}
+//dot product
+double vector::dot_product(vector& dot_vector) {
+	double dot_product{};
+	for (int i{}; i < dot_vector.vector_length; i++) {
+		dot_product += vector_array[i] * dot_vector.vector_array[i];
+	}	
+	return dot_product;
+}
 
 class four_vector:public vector
 {
@@ -116,8 +125,12 @@ public:
 int main() {
 	vector default_example;
 	std::cout << "default constructor:" << default_example;
-	vector paramertised_eg{2,-3,1};
-	std::cout << "parameterised vector: " << paramertised_eg;
-	std::cout << "vector length: " << paramertised_eg.vector_length() << std::endl;
+	vector one {3};
+	one[0] = 1; one[1] = 3; one[2] = -2;
+	std::cout << "parameterised vector: " << one;
+	vector dot;
+	std::cin >> dot;
+	std::cout << dot;
+	std::cout << "dot product of vectors one and dot: " << one.dot_product(dot) << std::endl;
 	return 0;
 }
