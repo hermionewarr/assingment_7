@@ -1,4 +1,4 @@
-//assignment 7
+//Assignment 7 - inherrited classes
 //Hermione Warr
 //16/03/2020
 
@@ -35,18 +35,18 @@ public:
 	//dot product
 	double dot_product(vector& dottie_boi);
 };
-/*--------------------------
-member functions of vector
----------------------------*/
+/*----------------------------
+  member functions of vector
+-----------------------------*/
 //overload friend operators for output and input stream
 std::ostream& operator<<(std::ostream& os, const vector &out_vector)
 {
+	os << "{";
 	for (int i{}; i < out_vector.vector_length; i++) {
-		if (out_vector.vector_array[i] > 0 && i>0) {
-			os << "+";
-		}
-		os << out_vector.vector_array[i] << "e" << i + 1;
+		os << out_vector.vector_array[i];
+		if (i != out_vector.vector_length-1) { os << ", "; }
 	}
+	os << "}";
 	return os;
 }
 std::istream& operator>>(std::istream& is, vector& vector_in) {
@@ -127,15 +127,15 @@ protected:
 	//vector four{ 4 };
 public:
 	four_vector() : vector{ 4 } {};
-	four_vector(double ct, double x_comp, double y_comp, double z_comp) : vector{ 4 }
+	four_vector(double x_comp, double y_comp, double z_comp, double ct) : vector{ 4 }
 	{
-		vector_array[0] = ct, vector_array[1] = x_comp, vector_array[2] = y_comp, vector_array[3] = z_comp;
+		vector_array[0] = x_comp, vector_array[1] = y_comp, vector_array[2] = z_comp, vector_array[3] = ct;
 	}
-	four_vector(const double ct, vector three_vector) : vector{ 4 }
+	four_vector(vector three_vector, const double ct) : vector{ 4 }
 	{
-		vector_array[0] = ct;
+		vector_array[3] = ct;
 		for (int i{}; i < 3; i++) {
-			vector_array[i + 1] = three_vector[i];
+			vector_array[i] = three_vector[i];
 		}
 	}
 	~four_vector() { std::cout << "destroying 4-vector\n"; }
@@ -145,10 +145,15 @@ public:
 	four_vector& operator=(four_vector&);
 	four_vector& operator=(four_vector&&) noexcept;
 	//acessing components 
-	double component(int component) { return vector_array[component]; }
+	double x_component() { return vector_array[0]; }
+	double y_component() { return vector_array[1]; }
+	double z_component() { return vector_array[2]; }
+	double ct_component() { return vector_array[3]; }
 	double length() const { return vector_length; }
 	//dot
 	double dot_product(four_vector& dottie_boi);
+	//lorentz boost
+	four_vector lorentz_boost(vector beta);
 };
 /*---------------------------
 member functions of 4-vector
@@ -158,7 +163,11 @@ std::ostream& operator<<(std::ostream& os, const four_vector& out_4_vector)
 {
 	os << "{";
 	for (int i{}; i < 4; i++) {
-		os << out_4_vector.vector_array[i] << "e" << i + 1;
+		os << out_4_vector.vector_array[i];
+		if (i == 0) { os << "x"; }
+		else if (i == 1) { os << "y"; }
+		else if (i == 2) { os << "z"; }
+		else if (i == 3) { os << "ct"; }
 		if (i < 3) {os << ", ";}
 	}
 	os << "}";
@@ -211,39 +220,143 @@ four_vector& four_vector::operator=(four_vector&& movevector) noexcept
 //dot product
 double four_vector::dot_product(four_vector& dot_vector) {
 	double dot_product{};
-	if (vector_length == dot_vector.vector_length) {
-		for (int i{}; i < dot_vector.vector_length; i++) {
-			dot_product += vector_array[i] * dot_vector.vector_array[i];
+	dot_product = vector_array[3] * dot_vector[3];
+		for (int i{}; i < dot_vector.vector_length-1; i++) {
+			dot_product -= vector_array[i] * dot_vector.vector_array[i];
 		}
-	}
-	else { std::cout << "Your vectors are not the same the length!\n"; }
 	return dot_product;
 }
+four_vector four_vector::lorentz_boost(vector beta)
+{
+	double ct{}; double gamma{}; double ct_prime{}; 
+	vector r{ 3 }; vector r_prime{ 3 };
+	r[0] = vector_array[0]; r[1] = vector_array[1]; r[2] = vector_array[2];
+	ct = vector_array[3];
+	gamma = 1 / sqrt(1 - beta.dot_product(beta));
+	ct_prime = gamma * (ct - beta.dot_product(r));
+	for (int i{}; i < 3; i++) {
+		r_prime[i] = r[i] + ((gamma - 1) * (r.dot_product(beta) / beta.dot_product(beta)) - gamma * ct) * beta[i];
+	}
 
+	std::cout << "beta is: " << beta << std::endl;
+	std::cout << "gamma factor: " << gamma << std::endl;
+	std::cout << "ct prime: " << ct_prime << std::endl;
+	std::cout << "r prime: " << r_prime << std::endl;
+	four_vector lorentz_boosted_vector{ r_prime, ct_prime };
+	return lorentz_boosted_vector;
+}
 class particle
 {
 private:
+	four_vector position{};
+	double mass{};
+	vector beta{ 3 };
 public:
+	particle() : position{0,0,0,0} {}
+	particle(four_vector particle_position, double m, vector B) :
+		position{ particle_position }, mass{ m }, beta{B} {}
+	~particle() { std::cout << "particle destructor called" << std::endl; }
+	//gamma
+	double gamma_factor() {
+		double gamma = 1 / (1 - beta.dot_product(beta));
+		return gamma;
+	}
+	//total particle energy 
+	double total_energy(){
+		double energy = gamma_factor() * mass;
+		return energy;
+	}
+	//particle momentum
+	vector three_momentum() {
+		vector momentum{ 3 };
+		for (int i{}; i < 3; i++) {
+			momentum[i] = gamma_factor() * mass * beta[i];
+		}
+		return momentum;
+	}
 };
 
 int main() {
+	/*-------------
+	  Vector class
+	--------------*/
 	vector default_example;
-	std::cout << "default constructor:" << default_example<< std::endl;
+	std::cout << "Default constructor:" << default_example<< std::endl;
 	vector one {3};
 	one[0] = 1; one[1] = 3; one[2] = -2;
-	std::cout << "parameterised vector: " << one << std::endl;
-	std::cout << "second component of vector one: " << one.component(2) << std::endl;
+	std::cout << "Parameterised vector: " << one << std::endl;
+	//acessing a vector component
+	std::cout << "Second component of vector one: " << one.component(1) << std::endl;
+	//Demonstrate copy and move on the vector
+	//Deep copy using copy constructor
+	vector copy_one{ one };
+	std::cout << "Deep copy of vector one: " << copy_one << std::endl;
+	//Deep copy by assignment
+	vector copy_assignment{};
+	copy_assignment = one;
+	std::cout << "Copy by assignemnt of vector one: " << copy_assignment <<std::endl;
+	//Move construction demonstration
+	vector move_one{ std::move(one) };
+	std::cout << "Moving vector one to vector move_one with the move constructor: " << move_one << std::endl;
+	//Move assignment demonstration
+	vector move_assignment{};
+	move_assignment = std::move(copy_one);
+	std::cout << "Move vector copy_one to vector move_assignemt by assignment: " << move_assignment << std::endl;
+	//input stream
 	size_t dimensions{};
 	std::cout << "please enter the number of dimensions of your vector: ";
 	std::cin >> dimensions;
+	//dot product
 	vector dot{dimensions};
+	vector two{ 3 };
+	two[0] = -6; two[1] = 5; two[2] = 4;
 	std::cin >> dot;
-	std::cout << "dot vector: " << dot << std::endl;
-	std::cout << "dot product of vectors one and dot: " << one.dot_product(dot) << std::endl;
-	//4-vector
+	std::cout << "Vector dot: " << dot << std::endl;
+	std::cout << "Vector two: " << two << std::endl;
+	std::cout << "Dot product of vectors two and dot: " << two.dot_product(dot) << std::endl;
+	/*----------------
+	  4-vector class
+	------------------*/
 	four_vector doubles{10,2,3,4};
-	four_vector double_vector{12,one};
+	four_vector vector_double{two,12};
 	std::cout << "4-vector doubles: " << doubles << std::endl;
-	std::cout << "4-vector double_vector: " << double_vector << std::endl;
+	std::cout << "4-vector double_vector: " << vector_double << std::endl;
+	//acsessing components
+	std::cout << "ct component of four vector doubles: " << doubles.ct_component() << std::endl;
+	//Demonstrate copy and move on the 4-vector
+	//Deep copy using copy constructor
+	four_vector four_vector_copy{ doubles };
+	std::cout << "Deep copy of 4-vector doubles: " << four_vector_copy << std::endl;
+	//Deep copy by assignment
+	four_vector four_vector_copy_assignment{};
+	four_vector_copy_assignment = doubles;
+	std::cout << "Copy by assignemnt of 4-vector doubles: " << four_vector_copy_assignment << std::endl;
+	//Move construction demonstration
+	four_vector four_vector_move{ std::move(doubles) };
+	std::cout << "Moving doubles to four_vector_move with the 4-vector move constructor: " << four_vector_move << std::endl;
+	//Move assignment demonstration
+	four_vector four_move_assignment{};
+	four_move_assignment = std::move(vector_double);
+	std::cout << "Move vector vector_double to four_move_assignemt by assignment: " << four_move_assignment << std::endl;
+	//Dot product
+	four_vector four_dot{ 1,-4,2,3 };
+	std::cout << "Dot product: four_vector_copy dotted with four_dot: " << four_vector_copy.dot_product(four_dot) << std::endl;
+	//lorentz boost
+	vector beta{ 3 };
+	beta[0] = 0.6; beta[1] = 0.55; beta[2] = 0.5;
+	four_vector unprimed{ 2,4,6,3 };
+	std::cout << "Unprimed 4-vecotr is: " << unprimed << std::endl;
+	std::cout << "The lorentz boost of the unprimed 4-vector is: " << unprimed.lorentz_boost(beta) << std::endl;
+	/*----------------
+	  Particle class
+	-----------------*/
+	double ct{ 0.5 };
+	double electron_mass{ 0.511 };
+	four_vector particle_position{ 1,2,3,ct };
+	particle electron{ particle_position, electron_mass, beta };
+	std::cout << "electron gamma factor: " << electron.gamma_factor() <<std::endl;
+	std::cout << "Total energy of electron: " << electron.total_energy() << std::endl;
+	std::cout << "Three momentum of the electron: " << electron.three_momentum() << std::endl;
+
 	return 0;
 }
