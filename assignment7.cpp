@@ -80,21 +80,23 @@ vector& vector::operator=(vector& copyvector)
 {
 	std::cout << "copy assignment operator called \n";
 	if (&copyvector == this) { return *this;}
-
+	//delete this objects array first
+	delete[] vector_array;
+	vector_array = nullptr;
+	vector_length = 0;
+	//copy into new array
+	vector_length = copyvector.vector_length;
+	vector_array = new double[vector_length];
 	for (size_t i{}; i < copyvector.vector_length; i++) {
-		vector_array[i] = 0;
-	}
-	for (size_t i{}; i < copyvector.vector_length; i++) {
-		vector_array[i] = copyvector.vector_array[i];
+		vector_array[i] = copyvector[i];
 	}
 	return *this;
 }
 vector& vector::operator=(vector&& movevector) noexcept
 {
 	std::cout << "move aasingment operator called" << std::endl;
-	for (size_t i{}; i < movevector.vector_length; i++) {
-		std::swap(vector_array[i], movevector.vector_array[i]);
-	}
+	std::swap(vector_length, movevector.vector_length);
+	std::swap(vector_array, movevector.vector_array);
 	return *this;
 }
 //overloaded element [] operator implementation
@@ -132,7 +134,7 @@ public:
 	four_vector(const double ct, vector three_vector) : vector{ 4 }
 	{
 		vector_array[0] = ct;
-		for (int i{}; i < 2; i++) {
+		for (int i{}; i < 3; i++) {
 			vector_array[i + 1] = three_vector[i];
 		}
 	}
@@ -154,51 +156,56 @@ member functions of 4-vector
 //overload friend operators for output and input stream
 std::ostream& operator<<(std::ostream& os, const four_vector& out_4_vector)
 {
-	std::cout << "trying to output this thing!" << std::endl;
+	os << "{";
 	for (int i{}; i < 4; i++) {
-		os << out_4_vector.vector_array[i] << "e" << i + 1 << std::endl;
+		os << out_4_vector.vector_array[i] << "e" << i + 1;
+		if (i < 3) {os << ", ";}
 	}
+	os << "}";
 	return os;
 }
-
 //copy and move constructors and operators
-four_vector::four_vector(four_vector& copy_4_vector)
+four_vector::four_vector(four_vector& copyvector)
 {
 	std::cout << "copy constructor called" << std::endl;
 	vector_array = nullptr;
 	vector_length = 4;
-	for (size_t i{}; i < 4; i++) {
-		vector_array[i] = copy_4_vector.vector_array[i];
+	if (vector_length > 0) {
+		vector_array = new double[vector_length];
+		for (size_t i{}; i < 4; i++) {
+			vector_array[i] = copyvector[i];
+		}
 	}
 }
 four_vector::four_vector(four_vector&& move_vector) noexcept
 {
 	std::cout << "move constructor called" << std::endl;
-	for (size_t i{}; i < 4; i++) {
-		this->vector_array[i] = move_vector.vector_array[i];
-	}
-	for (int i{}; i < 4; i++) {
-		move_vector.vector_array[i] = 0;
-	}
+	vector_length = move_vector.vector_length;
+	vector_array = move_vector.vector_array;
+	move_vector.vector_length = 0;
+	move_vector.vector_array = nullptr;
 }
 four_vector& four_vector::operator=(four_vector& copyvector)
 {
 	std::cout << "copy assignment operator called \n";
-	if (&copyvector == this) return *this;
-	for (int i{}; i < 3; i++) {
-		vector_array[i] = 0;
-	}
-	for (size_t i{}; i < 3; i++) {
-		vector_array[i] = copyvector.vector_array[i];
+	if (&copyvector == this) { return *this; }
+	//delete this objects array first
+	delete[] vector_array;
+	vector_array = nullptr;
+	vector_length = 0;
+	//copy into new array
+	vector_length = copyvector.vector_length;
+	vector_array = new double[vector_length];
+	for (size_t i{}; i < copyvector.vector_length; i++) {
+		vector_array[i] = copyvector[i];
 	}
 	return *this;
 }
 four_vector& four_vector::operator=(four_vector&& movevector) noexcept
 {
 	std::cout << "move aasingment operator called" << std::endl;
-	for (size_t i{}; i < 4; i++) {
-		std::swap(vector_array[i], movevector.vector_array[i]);
-	}
+	std::swap(vector_length, movevector.vector_length);
+	std::swap(vector_array, movevector.vector_array);
 	return *this;
 }
 //dot product
@@ -225,7 +232,7 @@ int main() {
 	vector one {3};
 	one[0] = 1; one[1] = 3; one[2] = -2;
 	std::cout << "parameterised vector: " << one << std::endl;
-	std::cout << "second component of vector one: " << one.component(1) << std::endl;
+	std::cout << "second component of vector one: " << one.component(2) << std::endl;
 	size_t dimensions{};
 	std::cout << "please enter the number of dimensions of your vector: ";
 	std::cin >> dimensions;
